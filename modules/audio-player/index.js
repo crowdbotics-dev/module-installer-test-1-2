@@ -8,14 +8,7 @@ import TracksList from "./trackList";
 import { tracks } from "./options";
 import PropTypes from "prop-types";
 import RNFetchBlob from "rn-fetch-blob";
-
-const AudioPlayer = ({
-  onPlay,
-  onPause,
-  onBackwardCall,
-  onForwardCall,
-  onTrackItemSelect
-}) => {
+const AudioPlayer = ({ onPlay, onPause, onBackwardCall, onForwardCall, onTrackItemSelect }) => {
   const [isAlreadyPlay, setIsAlreadyPlay] = useState(false);
   const [duration, setDuration] = useState("00:00:00");
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -24,24 +17,21 @@ const AudioPlayer = ({
   const [audioRecorderPlayer] = useState(new AudioRecorderPlayer());
   const [selectedTrack, setSelectedTrack] = useState(tracks[0]);
 
-  const changeTime = async seconds => {
-    const seekTime = seconds / 100 * duration;
+  const changeTime = async (seconds) => {
+    const seekTime = (seconds / 100) * duration;
     setTimeElapsed(seekTime);
     audioRecorderPlayer.seekToPlayer(seekTime);
   };
 
   const onBackward = async () => {
     const currentIndex = tracks.indexOf(selectedTrack);
-
     if (currentIndex === 0) {
       setSelectedTrack(tracks[tracks.length - 1]);
     } else {
       setSelectedTrack(tracks[currentIndex - 1]);
     }
-
     onStopPress().then(async () => {
       await onStartPress();
-
       if (onBackwardCall) {
         onBackwardCall();
       }
@@ -52,6 +42,7 @@ const AudioPlayer = ({
     setIsAlreadyPlay(true);
     audioRecorderPlayer.startPlayer(selectedTrack?.path);
     audioRecorderPlayer.setVolume(1.0);
+
     audioRecorderPlayer.addPlayBackListener(async e => {
       setInProgress(true);
       const currentTime = Math.max(0, e.currentPosition);
@@ -61,15 +52,13 @@ const AudioPlayer = ({
         audioRecorderPlayer.stopPlayer();
         setIsAlreadyPlay(false);
       }
-
-      const percentage = currentTime / totalDuration * 100;
+      const percentage = (currentTime / totalDuration) * 100;
       const roundedPercentage = Math.round(percentage * 100) / 100;
-      setTimeElapsed(currentTime);
 
+      setTimeElapsed(currentTime);
       if (!isNaN(roundedPercentage)) {
         setPercent(roundedPercentage);
       }
-
       setDuration(e.duration);
 
       if (onPlay) {
@@ -78,10 +67,9 @@ const AudioPlayer = ({
     });
   };
 
-  const onPausePress = async e => {
+  const onPausePress = async (e) => {
     setIsAlreadyPlay(false);
     await audioRecorderPlayer.pausePlayer();
-
     if (onPause) {
       onPause();
     }
@@ -89,7 +77,6 @@ const AudioPlayer = ({
 
   const onForward = async () => {
     const currentIndex = tracks.indexOf(selectedTrack) + 1;
-
     if (currentIndex === tracks.length) {
       setSelectedTrack(tracks[1]);
     } else {
@@ -98,60 +85,56 @@ const AudioPlayer = ({
 
     onStopPress().then(async () => {
       await onStartPress();
-
       if (onForwardCall) {
         onForwardCall();
       }
     });
   };
 
-  const onStopPress = async e => {
+  const onStopPress = async (e) => {
     await audioRecorderPlayer.stopPlayer();
     await audioRecorderPlayer.removePlayBackListener();
   };
 
-  const onTrackItemPress = item => {
+  const onTrackItemPress = (item) => {
     setDuration("00:00:00");
     setTimeElapsed("00:00:00");
     setPercent(0);
     setSelectedTrack(item);
     onStopPress().then(async () => {
       await onStartPress();
-
       if (onTrackItemSelect) {
         onTrackItemSelect(item);
       }
     });
   };
-
   const requestToPermissions = async () => {
     try {
-      const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE, {
-        title: "Audio Player",
-        message: "App needs access to your Files... ",
-        buttonNeutral: "Ask Me Later",
-        buttonNegative: "Cancel",
-        buttonPositive: "OK"
-      });
-
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        startDownload();
-      }
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        {
+          title: "Audio Player",
+          message: "App needs access to your Files... ",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK"
+        }
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) { startDownload(); }
     } catch (err) {
       console.log("Error: ", err);
     }
   };
 
-  const getUrlExtension = url => {
+  const getUrlExtension = (url) => {
     return url.split(/[#?]/)[0].split(".").pop().trim();
   };
 
   const startDownload = async () => {
-    const {
-      path,
-      title
-    } = selectedTrack;
+    const { path, title } = selectedTrack;
+
     const ext = await getUrlExtension(path);
+
     RNFetchBlob.config({
       fileCache: true,
       appendExt: ext,
@@ -159,30 +142,37 @@ const AudioPlayer = ({
         useDownloadManager: true,
         notification: true,
         title: title,
-        path: RNFetchBlob.fs.dirs.DownloadDir + `${title}`,
-        // Android platform
+        path: RNFetchBlob.fs.dirs.DownloadDir + `${title}`, // Android platform
         description: "Downloading the file"
       }
-    }).fetch("GET", path).then(res => {
-      Alert.alert("Download Completed", `The file is save to ${res.path()}`);
-    });
+    }
+    ).fetch("GET", path)
+      .then(res => {
+        Alert.alert("Download Completed", `The file is save to ${res.path()}`);
+      }
+      );
   };
 
   useEffect(() => {
     LogBox.ignoreAllLogs();
   }, []);
-  return <SafeAreaView style={styles.container}>
+
+  return (
+    <SafeAreaView style={styles.container}>
       <View style={styles.downloadContainer}>
       <TouchableOpacity onPress={() => requestToPermissions()}>
           <FontAwesome name="download" size={25} color="#93A8B3" />
       </TouchableOpacity>
       </View>
 
-      <View style={styles.QoQlGfRI}>
+      <View style={{ alignItems: "center" }}>
         <View style={styles.coverContainer}>
-          <Image source={{
-          uri: selectedTrack?.artwork || "jy"
-        }} style={styles.cover} />
+          <Image
+            source={{
+              uri: selectedTrack?.artwork || "jy"
+            }}
+            style={styles.cover}
+          />
         </View>
         <View style={styles.trackName}>
           <Text style={[styles.textDark]}>
@@ -195,10 +185,14 @@ const AudioPlayer = ({
 
         <View style={styles.inProgress}>
           <Text style={[styles.textLight, styles.timeStamp]}>
-            {!inProgress ? timeElapsed : audioRecorderPlayer.mmssss(Math.floor(timeElapsed))}
+            {!inProgress
+              ? timeElapsed
+              : audioRecorderPlayer.mmssss(Math.floor(timeElapsed))}
           </Text>
           <Text style={[styles.textLight, styles.timeStamp]}>
-            {!inProgress ? duration : audioRecorderPlayer.mmssss(Math.floor(duration))}
+            {!inProgress
+              ? duration
+              : audioRecorderPlayer.mmssss(Math.floor(duration))}
           </Text>
         </View>
       </View>
@@ -207,14 +201,21 @@ const AudioPlayer = ({
         <TouchableOpacity onPress={() => onBackward()}>
           <FontAwesome name="backward" size={32} color="#93A8B3" />
         </TouchableOpacity>
-        {!isAlreadyPlay ? <PlayButton onPress={() => onStartPress()} state="play" /> : <PlayButton onPress={() => onPausePress()} state="pause" />}
+        {!isAlreadyPlay
+          ? (
+            <PlayButton onPress={() => onStartPress()} state="play" />
+            )
+          : (
+            <PlayButton onPress={() => onPausePress()} state="pause" />
+            )}
         <TouchableOpacity onPress={() => onForward()}>
           <FontAwesome name="forward" size={32} color="#93A8B3" />
         </TouchableOpacity>
       </View>
       <TracksList onTrackItemPress={onTrackItemPress} />
-    </SafeAreaView> //
-  ;
+    </SafeAreaView>
+    //
+  );
 };
 
 AudioPlayer.propTypes = {
@@ -224,6 +225,7 @@ AudioPlayer.propTypes = {
   onForwardCall: PropTypes.func,
   onTrackItemSelect: PropTypes.func
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -235,10 +237,7 @@ const styles = StyleSheet.create({
   text: {
     color: "#8E97A6"
   },
-  titleContainer: {
-    alignItems: "center",
-    marginTop: 24
-  },
+  titleContainer: { alignItems: "center", marginTop: 24 },
   textDark: {
     color: "#3D425C",
     fontSize: 18,
@@ -256,9 +255,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 100,
     shadowColor: "#5D3F6A",
-    shadowOffset: {
-      height: 15
-    },
+    shadowOffset: { height: 15 },
     shadowRadius: 8,
     shadowOpacity: 0.3
   },
@@ -267,33 +264,24 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 25
   },
+
   timeStamp: {
     fontSize: 11,
     fontWeight: "500"
   },
-  seekBar: {
-    marginBottom: 10,
-    marginTop: 10,
-    marginHorizontal: 32
-  },
+  seekBar: { marginBottom: 10, marginTop: 10, marginHorizontal: 32 },
   inProgress: {
     marginTop: -12,
     flexDirection: "row",
     justifyContent: "space-between"
   },
-  trackName: {
-    alignItems: "center",
-    marginTop: 20
-  },
+  trackName: { alignItems: "center", marginTop: 20 },
   downloadContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
     paddingRight: 30,
     paddingTop: 20
-  },
-  QoQlGfRI: {
-    alignItems: "center"
   }
 });
 export default {
@@ -301,12 +289,19 @@ export default {
   navigator: AudioPlayer
 };
 
-const AudioSlider = ({
-  percent,
-  changeTime,
-  inProgress
-}) => {
-  return <Slider minimumValue={0} maximumValue={100} trackStyle={sliderStyles.track} thumbStyle={sliderStyles.thumb} value={percent} minimumTrackTintColor="#93A8B3" onValueChange={seconds => changeTime(seconds)} disabled={!inProgress} />;
+const AudioSlider = ({ percent, changeTime, inProgress }) => {
+  return (
+    <Slider
+          minimumValue={0}
+          maximumValue={100}
+          trackStyle={sliderStyles.track}
+          thumbStyle={sliderStyles.thumb}
+          value={percent}
+          minimumTrackTintColor="#93A8B3"
+          onValueChange={(seconds) => changeTime(seconds)}
+          disabled={!inProgress}
+        />
+  );
 };
 
 const sliderStyles = StyleSheet.create({
